@@ -10,9 +10,14 @@ import (
 
 type Config struct {
 	// Service Identity
-	ServiceName    string
-	ServiceVersion string
-	Environment    string
+	ServiceName         string
+	ServiceInstanceName string // Instance identifier (e.g., "market-data-Coinmetrics")
+	ServiceVersion      string
+	Environment         string
+
+	// Instance-Aware Infrastructure
+	SchemaName     string // PostgreSQL schema (auto-derived if empty)
+	RedisNamespace string // Redis key prefix (auto-derived if empty)
 
 	// PostgreSQL
 	PostgresURL           string
@@ -60,10 +65,13 @@ func LoadConfig() (*Config, error) {
 	// Try to load .env file (ignore errors if not found)
 	_ = godotenv.Load()
 
-	return &Config{
+	cfg := &Config{
 		ServiceName:               getEnv("SERVICE_NAME", "market-data-adapter"),
+		ServiceInstanceName:       getEnv("SERVICE_INSTANCE_NAME", ""),
 		ServiceVersion:            getEnv("SERVICE_VERSION", "1.0.0"),
 		Environment:               getEnv("ENVIRONMENT", "development"),
+		SchemaName:                getEnv("SCHEMA_NAME", ""),
+		RedisNamespace:            getEnv("REDIS_NAMESPACE", ""),
 		PostgresURL:               getEnv("POSTGRES_URL", ""),
 		MaxConnections:            getEnvInt("MAX_CONNECTIONS", 25),
 		MaxIdleConnections:        getEnvInt("MAX_IDLE_CONNECTIONS", 10),
@@ -89,7 +97,14 @@ func LoadConfig() (*Config, error) {
 		PerfThroughputMin:         getEnvInt("PERF_THROUGHPUT_MIN", 100),
 		PerfLatencyMax:            getEnvDuration("PERF_LATENCY_MAX", 100*time.Millisecond),
 		SkipIntegrationTests:      getEnvBool("SKIP_INTEGRATION_TESTS", false),
-	}, nil
+	}
+
+	// Backward compatibility: Default ServiceInstanceName to ServiceName
+	if cfg.ServiceInstanceName == "" {
+		cfg.ServiceInstanceName = cfg.ServiceName
+	}
+
+	return cfg, nil
 }
 
 func getEnv(key, defaultValue string) string {

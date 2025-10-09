@@ -3,6 +3,7 @@ package adapters
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/quantfidential/trading-ecosystem/market-data-adapter-go/internal/cache"
 	"github.com/quantfidential/trading-ecosystem/market-data-adapter-go/internal/config"
@@ -50,6 +51,23 @@ func NewMarketDataAdapter(cfg *config.Config, logger *logrus.Logger) (DataAdapte
 	if logger == nil {
 		return nil, fmt.Errorf("logger is required")
 	}
+
+	// Apply derivation if schema name not explicitly provided
+	if cfg.SchemaName == "" {
+		cfg.SchemaName = deriveSchemaName(cfg.ServiceName, cfg.ServiceInstanceName)
+	}
+
+	// Apply derivation if Redis namespace not explicitly provided
+	if cfg.RedisNamespace == "" {
+		cfg.RedisNamespace = deriveRedisNamespace(cfg.ServiceName, cfg.ServiceInstanceName)
+	}
+
+	logger.WithFields(logrus.Fields{
+		"service_name":    cfg.ServiceName,
+		"instance_name":   cfg.ServiceInstanceName,
+		"schema_name":     cfg.SchemaName,
+		"redis_namespace": cfg.RedisNamespace,
+	}).Info("DataAdapter configuration resolved")
 
 	adapter := &MarketDataAdapter{
 		config: cfg,
@@ -185,4 +203,54 @@ func (a *MarketDataAdapter) ServiceDiscoveryRepository() interfaces.ServiceDisco
 
 func (a *MarketDataAdapter) CacheRepository() interfaces.CacheRepository {
 	return a.cacheRepo
+}
+
+// deriveSchemaName determines PostgreSQL schema based on service instance pattern
+// Singleton: market-data-simulator == market-data-simulator → "market_data"
+// Multi-instance: market-data-Coinmetrics → "market_data_coinmetrics"
+func deriveSchemaName(serviceName, instanceName string) string {
+	if serviceName == instanceName {
+		// Singleton service pattern
+		// Example: "market-data-simulator" -> "market_data"
+		parts := strings.Split(serviceName, "-")
+		if len(parts) >= 2 {
+			return parts[0] + "_" + parts[1]
+		}
+		return serviceName
+	}
+
+	// Multi-instance service pattern
+	// Example: "market-data-Coinmetrics" -> "market_data_coinmetrics"
+	parts := strings.Split(instanceName, "-")
+	if len(parts) >= 3 {
+		// Has entity identifier: market-data-Coinmetrics -> market_data_coinmetrics
+		return strings.ToLower(parts[0] + "_" + parts[1] + "_" + parts[2])
+	} else if len(parts) >= 2 {
+		// Only two parts: market-data -> market_data
+		return strings.ToLower(parts[0] + "_" + parts[1])
+	}
+	return strings.ToLower(instanceName)
+}
+
+// deriveRedisNamespace determines Redis key prefix based on service instance pattern
+// Singleton: market-data-simulator == market-data-simulator → "market_data"
+// Multi-instance: market-data-Coinmetrics → "market_data:Coinmetrics"
+func deriveRedisNamespace(serviceName, instanceName string) string {
+	if serviceName == instanceName {
+		// Singleton service pattern
+		// Example: "market-data-simulator" -> "market_data"
+		parts := strings.Split(serviceName, "-")
+		if len(parts) >= 2 {
+			return parts[0] + "_" + parts[1]
+		}
+		return serviceName
+	}
+
+	// Multi-instance service pattern
+	// Example: "market-data-Coinmetrics" -> "market_data:Coinmetrics"
+	parts := strings.Split(instanceName, "-")
+	if len(parts) >= 2 {
+		return parts[0] + "_" + parts[1] + ":" + strings.Join(parts[2:], "-")
+	}
+	return instanceName
 }
