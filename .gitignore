@@ -29,6 +29,8 @@ profile.cov
 vendor/
 
 # Build artifacts
+market-data-adapter
+/market-data-adapter
 
 # Environment files (DO NOT COMMIT SECRETS)
 .env
