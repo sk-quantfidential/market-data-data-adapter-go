@@ -104,7 +104,7 @@ market-data-adapter-go/
 **Goal**: Create repository structure and base configuration
 **Estimated Time**: 1 hour
 
-#### Steps:
+#### Steps
 - [ ] Create repository directory structure
 - [ ] Initialize go.mod with dependencies:
   ```go
@@ -140,7 +140,7 @@ market-data-adapter-go/
 **Goal**: Create production-ready .env configuration following 12-factor app principles
 **Estimated Time**: 30 minutes
 
-#### .env.example Template:
+#### .env.example Template
 ```bash
 # Market Data Adapter Configuration
 # Copy this to .env and update with your orchestrator credentials
@@ -198,7 +198,7 @@ PERF_LATENCY_MAX=100ms                  # Maximum average latency
 SKIP_INTEGRATION_TESTS=false            # Set to true in CI without infrastructure
 ```
 
-#### Configuration Implementation (internal/config/config.go):
+#### Configuration Implementation (internal/config/config.go)
 
 Follow audit-data-adapter-go pattern with:
 - Environment variable loading with defaults
@@ -491,7 +491,7 @@ type SymbolQuery struct {
 **Goal**: Define clean interfaces for all market data operations
 **Estimated Time**: 1 hour
 
-#### Price Feed Repository (pkg/interfaces/price_feed_repository.go):
+#### Price Feed Repository (pkg/interfaces/price_feed_repository.go)
 ```go
 package interfaces
 
@@ -521,7 +521,7 @@ type PriceFeedRepository interface {
 }
 ```
 
-#### Candle Repository (pkg/interfaces/candle_repository.go):
+#### Candle Repository (pkg/interfaces/candle_repository.go)
 ```go
 package interfaces
 
@@ -551,7 +551,7 @@ type CandleRepository interface {
 }
 ```
 
-#### Market Snapshot Repository (pkg/interfaces/market_snapshot_repository.go):
+#### Market Snapshot Repository (pkg/interfaces/market_snapshot_repository.go)
 ```go
 package interfaces
 
@@ -581,7 +581,7 @@ type MarketSnapshotRepository interface {
 }
 ```
 
-#### Symbol Repository (pkg/interfaces/symbol_repository.go):
+#### Symbol Repository (pkg/interfaces/symbol_repository.go)
 ```go
 package interfaces
 
@@ -617,7 +617,7 @@ type SymbolRepository interface {
 }
 ```
 
-#### Shared Interfaces (copy from audit-data-adapter-go):
+#### Shared Interfaces (copy from audit-data-adapter-go)
 
 **pkg/interfaces/service_discovery.go** - Same as audit-data-adapter-go
 **pkg/interfaces/cache.go** - Same as audit-data-adapter-go
@@ -696,7 +696,7 @@ Follow audit-data-adapter-go pattern for:
 **Goal**: Create factory pattern for adapter initialization
 **Estimated Time**: 1 hour
 
-#### pkg/adapters/factory.go:
+#### pkg/adapters/factory.go
 ```go
 package adapters
 
@@ -743,7 +743,7 @@ func NewMarketDataAdapterFromEnv(logger *logrus.Logger) (DataAdapter, error) {
 **Goal**: Create comprehensive test suite following audit-data-adapter-go pattern
 **Estimated Time**: 3 hours
 
-#### Test Files to Create:
+#### Test Files to Create
 - `tests/init_test.go` - godotenv loading and test setup
 - `tests/behavior_test_suite.go` - BDD framework with Given/When/Then
 - `tests/price_feed_behavior_test.go` - Price feed CRUD and queries
@@ -755,7 +755,7 @@ func NewMarketDataAdapterFromEnv(logger *logrus.Logger) (DataAdapter, error) {
 - `tests/integration_behavior_test.go` - Cross-repository consistency tests
 - `tests/test_utils.go` - Test utilities and factories
 
-#### Makefile Test Automation:
+#### Makefile Test Automation
 ```makefile
 .PHONY: test test-quick test-price test-candle test-snapshot test-symbol test-service test-cache test-integration test-all test-coverage check-env
 
@@ -766,59 +766,59 @@ ifneq (,$(wildcard .env))
 endif
 
 check-env:
-	@if [ ! -f .env ]; then \
-		echo "Warning: .env not found. Copy .env.example to .env"; \
-		exit 1; \
-	fi
+ @if [ ! -f .env ]; then \
+  echo "Warning: .env not found. Copy .env.example to .env"; \
+  exit 1; \
+ fi
 
 test-quick:
-	@if [ -f .env ]; then set -a && . ./.env && set +a; fi && \
-	go test -v ./tests -run TestPriceFeedBehavior -timeout=2m
+ @if [ -f .env ]; then set -a && . ./.env && set +a; fi && \
+ go test -v ./tests -run TestPriceFeedBehavior -timeout=2m
 
 test-price: check-env
-	@set -a && . ./.env && set +a && \
-	go test -v ./tests -run TestPriceFeedBehaviorSuite -timeout=5m
+ @set -a && . ./.env && set +a && \
+ go test -v ./tests -run TestPriceFeedBehaviorSuite -timeout=5m
 
 test-candle: check-env
-	@set -a && . ./.env && set +a && \
-	go test -v ./tests -run TestCandleBehaviorSuite -timeout=5m
+ @set -a && . ./.env && set +a && \
+ go test -v ./tests -run TestCandleBehaviorSuite -timeout=5m
 
 test-snapshot: check-env
-	@set -a && . ./.env && set +a && \
-	go test -v ./tests -run TestMarketSnapshotBehaviorSuite -timeout=5m
+ @set -a && . ./.env && set +a && \
+ go test -v ./tests -run TestMarketSnapshotBehaviorSuite -timeout=5m
 
 test-symbol: check-env
-	@set -a && . ./.env && set +a && \
-	go test -v ./tests -run TestSymbolBehaviorSuite -timeout=5m
+ @set -a && . ./.env && set +a && \
+ go test -v ./tests -run TestSymbolBehaviorSuite -timeout=5m
 
 test-service: check-env
-	@set -a && . ./.env && set +a && \
-	go test -v ./tests -run TestServiceDiscoveryBehaviorSuite -timeout=5m
+ @set -a && . ./.env && set +a && \
+ go test -v ./tests -run TestServiceDiscoveryBehaviorSuite -timeout=5m
 
 test-cache: check-env
-	@set -a && . ./.env && set +a && \
-	go test -v ./tests -run TestCacheBehaviorSuite -timeout=5m
+ @set -a && . ./.env && set +a && \
+ go test -v ./tests -run TestCacheBehaviorSuite -timeout=5m
 
 test-integration: check-env
-	@set -a && . ./.env && set +a && \
-	go test -v ./tests -run TestIntegrationBehaviorSuite -timeout=10m
+ @set -a && . ./.env && set +a && \
+ go test -v ./tests -run TestIntegrationBehaviorSuite -timeout=10m
 
 test-all: check-env
-	@set -a && . ./.env && set +a && \
-	go test -v ./tests -timeout=15m
+ @set -a && . ./.env && set +a && \
+ go test -v ./tests -timeout=15m
 
 test-coverage: check-env
-	@set -a && . ./.env && set +a && \
-	go test -v ./tests -coverprofile=coverage.out -timeout=15m
-	@go tool cover -html=coverage.out -o coverage.html
-	@echo "Coverage report generated: coverage.html"
+ @set -a && . ./.env && set +a && \
+ go test -v ./tests -coverprofile=coverage.out -timeout=15m
+ @go tool cover -html=coverage.out -o coverage.html
+ @echo "Coverage report generated: coverage.html"
 
 build:
-	go build -v ./...
+ go build -v ./...
 
 clean:
-	rm -f coverage.out coverage.html
-	go clean -testcache
+ rm -f coverage.out coverage.html
+ go clean -testcache
 ```
 
 **Test Coverage Goals**:
@@ -845,7 +845,7 @@ clean:
 **Goal**: Create comprehensive documentation for developers
 **Estimated Time**: 1 hour
 
-#### README.md:
+#### README.md
 - Overview of market data adapter
 - Architecture and repository pattern
 - Installation and setup instructions
@@ -854,7 +854,7 @@ clean:
 - Environment configuration reference
 - Data retention and cleanup strategies
 
-#### tests/README.md:
+#### tests/README.md
 - Testing framework overview
 - How to run different test suites
 - Environment setup for tests
