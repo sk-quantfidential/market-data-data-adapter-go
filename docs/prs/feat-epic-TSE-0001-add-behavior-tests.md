@@ -17,6 +17,29 @@ This PR adds comprehensive BDD (Behavior-Driven Development) behavior tests to t
 5. **Automatic cleanup** tracking to prevent test pollution
 6. **Test entity factories** with functional options pattern
 
+## What Changed
+
+### Phase 1: Add comprehensive BDD behavior tests for market data adapter
+**Commit:** `41efd94`
+
+Details documented in commit message.
+
+### Phase 2: docs: Add pull request documentation for feature branches
+**Commit:** `8a1a58d`
+
+Details documented in commit message.
+
+### Phase 3: feat: Add comprehensive Makefile for testing and development
+**Commit:** `d7bd125`
+
+Details documented in commit message.
+
+### Phase 4: chore: rename PR doc to match updated branch naming convention
+**Commit:** `d5a700e`
+
+Details documented in commit message.
+
+
 ## Market-Data-Adapter-Go Repository Changes
 
 ### Commit Summary
