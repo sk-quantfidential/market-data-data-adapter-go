@@ -2,7 +2,7 @@
 
 **Epic:** TSE-0001 - Foundation Services & Infrastructure
 **Milestone:** TSE-0001.4.3 - Market Data Adapter Foundation
-**Branch:** `feature/add-behavior-tests`
+**Branch:** `feature/epic-TSE-0001-add-behavior-tests`
 **Status:** ✅ Ready for Merge
 
 ## Summary
