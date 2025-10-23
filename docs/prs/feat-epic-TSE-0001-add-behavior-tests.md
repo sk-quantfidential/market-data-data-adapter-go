@@ -39,7 +39,6 @@ Details documented in commit message.
 
 Details documented in commit message.
 
-
 ## Market-Data-Adapter-Go Repository Changes
 
 ### Commit Summary
