@@ -21,21 +21,21 @@ func (suite *BehaviorTestSuite) symbolLifecycleScenario() {
 			s.IsActive = true
 		})
 	}).When("the symbol is created in the repository", func() {
-		err = suite.adapter.CreateSymbol(suite.ctx, symbol)
+		err = suite.adapter.SymbolRepository().Create(suite.ctx, symbol)
 		suite.Require().NoError(err)
 		suite.trackCreatedSymbol(symbolID)
 	}).Then("the symbol should be retrievable", func() {
-		retrievedSymbol, getErr := suite.adapter.GetSymbol(suite.ctx, symbolID)
+		retrievedSymbol, getErr := suite.adapter.SymbolRepository().GetByID(suite.ctx, symbolID)
 		suite.Require().NoError(getErr)
 		suite.Require().NotNil(retrievedSymbol)
 		suite.Equal(symbolID, retrievedSymbol.SymbolID)
 		suite.True(retrievedSymbol.IsActive)
 	}).And("the symbol can be deactivated", func() {
 		symbol.IsActive = false
-		updateErr := suite.adapter.UpdateSymbol(suite.ctx, symbol)
+		updateErr := suite.adapter.SymbolRepository().Update(suite.ctx, symbol)
 		suite.Require().NoError(updateErr)
 	}).And("the updated status should be persisted", func() {
-		updatedSymbol, getErr := suite.adapter.GetSymbol(suite.ctx, symbolID)
+		updatedSymbol, getErr := suite.adapter.SymbolRepository().GetByID(suite.ctx, symbolID)
 		suite.Require().NoError(getErr)
 		suite.False(updatedSymbol.IsActive)
 	})
@@ -54,17 +54,17 @@ func (suite *BehaviorTestSuite) priceFeedLifecycleScenario() {
 			pf.Symbol = "BTC-USD"
 		})
 	}).When("the price feed is created", func() {
-		err = suite.adapter.CreatePriceFeed(suite.ctx, priceFeed)
+		err = suite.adapter.PriceFeedRepository().Create(suite.ctx, priceFeed)
 		suite.Require().NoError(err)
 		suite.trackCreatedPriceFeed(feedID)
 	}).Then("the price feed should be retrievable", func() {
-		retrievedFeed, getErr := suite.adapter.GetPriceFeed(suite.ctx, feedID)
+		retrievedFeed, getErr := suite.adapter.PriceFeedRepository().GetByID(suite.ctx, feedID)
 		suite.Require().NoError(getErr)
 		suite.Require().NotNil(retrievedFeed)
 		suite.Equal(feedID, retrievedFeed.FeedID)
 		suite.Equal("BTC-USD", retrievedFeed.Symbol)
 	}).And("the price feed should appear in symbol queries", func() {
-		feeds, listErr := suite.adapter.GetPriceFeedsBySymbol(suite.ctx, "BTC-USD")
+		feeds, listErr := suite.adapter.PriceFeedRepository().GetBySymbol(suite.ctx, "BTC-USD", 100)
 		suite.Require().NoError(listErr)
 		suite.Require().NotEmpty(feeds)
 
@@ -93,24 +93,25 @@ func (suite *BehaviorTestSuite) candleLifecycleScenario() {
 			c.Interval = models.Interval1m
 		})
 	}).When("the candle is created", func() {
-		err = suite.adapter.CreateCandle(suite.ctx, candle)
+		err = suite.adapter.CandleRepository().Upsert(suite.ctx, candle)
 		suite.Require().NoError(err)
 		suite.trackCreatedCandle(candleID)
 	}).Then("the candle should be retrievable", func() {
-		retrievedCandle, getErr := suite.adapter.GetCandle(suite.ctx, candleID)
+		retrievedCandle, getErr := suite.adapter.CandleRepository().GetByID(suite.ctx, candleID)
 		suite.Require().NoError(getErr)
 		suite.Require().NotNil(retrievedCandle)
 		suite.Equal(candleID, retrievedCandle.CandleID)
 		suite.Equal("ETH-USD", retrievedCandle.Symbol)
 		suite.Equal(models.Interval1m, retrievedCandle.Interval)
 	}).And("the candle should appear in time-series queries", func() {
-		candles, listErr := suite.adapter.GetCandlesBySymbolAndInterval(
-			suite.ctx,
-			"ETH-USD",
-			models.Interval1m,
-			candle.StartTime,
-			candle.EndTime,
-		)
+		interval := models.Interval1m
+		query := &models.CandleQuery{
+			Symbol:        stringPtr("ETH-USD"),
+			Interval:      &interval,
+			StartTimeFrom: &candle.StartTime,
+			StartTimeTo:   &candle.EndTime,
+		}
+		candles, listErr := suite.adapter.CandleRepository().Query(suite.ctx, query)
 		suite.Require().NoError(listErr)
 		suite.Require().NotEmpty(candles)
 
@@ -138,17 +139,17 @@ func (suite *BehaviorTestSuite) marketSnapshotLifecycleScenario() {
 			ms.Symbol = "SOL-USD"
 		})
 	}).When("the snapshot is created", func() {
-		err = suite.adapter.CreateMarketSnapshot(suite.ctx, snapshot)
+		err = suite.adapter.MarketSnapshotRepository().Create(suite.ctx, snapshot)
 		suite.Require().NoError(err)
 		suite.trackCreatedMarketSnapshot(snapshotID)
 	}).Then("the snapshot should be retrievable", func() {
-		retrievedSnapshot, getErr := suite.adapter.GetMarketSnapshot(suite.ctx, snapshotID)
+		retrievedSnapshot, getErr := suite.adapter.MarketSnapshotRepository().GetByID(suite.ctx, snapshotID)
 		suite.Require().NoError(getErr)
 		suite.Require().NotNil(retrievedSnapshot)
 		suite.Equal(snapshotID, retrievedSnapshot.SnapshotID)
 		suite.Equal("SOL-USD", retrievedSnapshot.Symbol)
 	}).And("the snapshot should be the latest for the symbol", func() {
-		latestSnapshot, getErr := suite.adapter.GetLatestMarketSnapshot(suite.ctx, "SOL-USD")
+		latestSnapshot, getErr := suite.adapter.MarketSnapshotRepository().GetLatestBySymbol(suite.ctx, "SOL-USD")
 		suite.Require().NoError(getErr)
 		suite.Equal(snapshotID, latestSnapshot.SnapshotID)
 	})
@@ -172,13 +173,13 @@ func (suite *BehaviorTestSuite) serviceDiscoveryLifecycleScenario() {
 		suite.Require().NoError(err)
 		suite.trackCreatedService(serviceID)
 	}).Then("the service should be discoverable", func() {
-		retrievedService, getErr := suite.adapter.GetService(suite.ctx, serviceID)
+		retrievedService, getErr := suite.adapter.ServiceDiscoveryRepository().GetServiceInfo(suite.ctx, serviceID)
 		suite.Require().NoError(getErr)
 		suite.Require().NotNil(retrievedService)
 		suite.Equal(serviceID, retrievedService.ID)
 		suite.Equal("healthy", retrievedService.Status)
 	}).And("the service should appear in service list by name", func() {
-		services, listErr := suite.adapter.GetServicesByName(suite.ctx, "test-lifecycle-service")
+		services, listErr := suite.adapter.ServiceDiscoveryRepository().Discover(suite.ctx, "test-lifecycle-service")
 		suite.Require().NoError(listErr)
 		suite.Require().NotEmpty(services)
 
@@ -208,24 +209,24 @@ func (suite *BehaviorTestSuite) cacheOperationsScenario() {
 	suite.Given("a cache key-value pair", func() {
 		// Key and value are defined above
 	}).When("the value is stored in cache with TTL", func() {
-		err := suite.adapter.Set(suite.ctx, key, value, ttl)
+		err := suite.adapter.CacheRepository().Set(suite.ctx, key, value, ttl)
 		suite.Require().NoError(err)
 	}).Then("the value should be retrievable from cache", func() {
 		var retrieved map[string]interface{}
-		err := suite.adapter.Get(suite.ctx, key, &retrieved)
+		err := suite.adapter.CacheRepository().Get(suite.ctx, key, &retrieved)
 		suite.Require().NoError(err)
 		suite.Equal(value["test_field"], retrieved["test_field"])
 		suite.Equal(float64(42), retrieved["numeric"]) // JSON unmarshaling converts numbers to float64
 		suite.Equal(true, retrieved["boolean"])
 	}).And("the cache should confirm the key exists", func() {
-		exists, err := suite.adapter.Exists(suite.ctx, key)
+		exists, err := suite.adapter.CacheRepository().Exists(suite.ctx, key)
 		suite.Require().NoError(err)
 		suite.True(exists)
 	}).And("the key can be deleted from cache", func() {
-		err := suite.adapter.Delete(suite.ctx, key)
+		err := suite.adapter.CacheRepository().Delete(suite.ctx, key)
 		suite.Require().NoError(err)
 	}).And("the deleted key should not exist", func() {
-		exists, err := suite.adapter.Exists(suite.ctx, key)
+		exists, err := suite.adapter.CacheRepository().Exists(suite.ctx, key)
 		suite.Require().NoError(err)
 		suite.False(exists)
 	})
